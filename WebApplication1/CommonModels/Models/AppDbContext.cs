@@ -35,7 +35,7 @@ namespace CommonModels.Models
                 entity.HasOne<User>()
                     .WithMany()
                     .HasForeignKey(p => p.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction); // added lately (for multiple cascade delete directions)
             });
 
             // Comment config
@@ -46,11 +46,11 @@ namespace CommonModels.Models
                 entity.HasOne<User>()
                     .WithMany()
                     .HasForeignKey(c => c.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction); // added lately (for multiple cascade delete directions)
                 entity.HasOne<Post>()
                     .WithMany()
                     .HasForeignKey(c => c.PostId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction); // added lately (for multiple cascade delete directions)
             });
         }
     }
