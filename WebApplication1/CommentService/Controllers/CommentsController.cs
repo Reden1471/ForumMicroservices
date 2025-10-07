@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using CommonModels.Models;
 
 namespace CommentService.Controllers
@@ -17,6 +19,7 @@ namespace CommentService.Controllers
 
         // GET: api/comments
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Comment>>> GetComments()
         {
             return await _context.Comments.ToListAsync();
@@ -24,6 +27,7 @@ namespace CommentService.Controllers
 
         // GET: api/comments/5
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<Comment>> GetComment(int id)
         {
             var comment = await _context.Comments.FindAsync(id);
@@ -38,6 +42,7 @@ namespace CommentService.Controllers
 
         // GET: api/comments/post/5
         [HttpGet("post/{postId}")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Comment>>> GetCommentsByPost(int postId)
         {
             return await _context.Comments
@@ -47,17 +52,36 @@ namespace CommentService.Controllers
 
         // POST: api/comments
         [HttpPost]
+        [Authorize] // ONLY SIGNED IN USERS
         public async Task<ActionResult<Comment>> PostComment(Comment comment)
         {
-            comment.CreatedAt = DateTime.UtcNow;
+            // Extract userID from JWT token
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var newComment = new Comment
+            {
+                Content = comment.Content,
+                PostId = comment.PostId,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+                // DON'T SET THE ID, THE DATABASE DOES
+            };
+
+            var userExists = await _context.Users.AnyAsync(u => u.Id == newComment.UserId);
+            if (!userExists)
+            {
+                return BadRequest("User does not exist");
+            }
+
             _context.Comments.Add(comment);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetComment", new { id = comment.Id }, comment);
+            return CreatedAtAction("GetComment", new { id = newComment.Id }, newComment);
         }
 
         // PUT: api/comments/5
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> PutComment(int id, Comment comment)
         {
             if (id != comment.Id)
@@ -65,7 +89,22 @@ namespace CommentService.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(comment).State = EntityState.Modified;
+            // Check if user owns the comment or is admin/moderator
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var existingComment = await _context.Comments.FindAsync(id);
+
+            if (existingComment == null)
+            {
+                return NotFound();
+            }
+
+            if (existingComment.UserId != userId && userRole != "Admin" && userRole != "Moderator")
+            {
+                return Forbid("You can only edit your own comments");
+            }
+
+            existingComment.Content = comment.Content;
 
             try
             {
@@ -88,12 +127,22 @@ namespace CommentService.Controllers
 
         // DELETE: api/comments/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> DeleteComment(int id)
         {
             var comment = await _context.Comments.FindAsync(id);
             if (comment == null)
             {
                 return NotFound();
+            }
+
+            // Check if user owns the comment or is admin/moderator
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (comment.UserId != userId && userRole != "Admin" && userRole != "Moderator")
+            {
+                return Forbid("You can only delete your own comments");
             }
 
             _context.Comments.Remove(comment);
