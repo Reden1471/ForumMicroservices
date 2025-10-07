@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "ApiGateway\Ap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonModels", "CommonModels\CommonModels.csproj", "{6B7C67E5-5F4B-42D6-A9BC-1C824071275D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForumFrontend", "ForumFrontend\ForumFrontend.csproj", "{44F48F12-B5E8-4382-AB2E-6F6F9A150A23}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{6B7C67E5-5F4B-42D6-A9BC-1C824071275D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B7C67E5-5F4B-42D6-A9BC-1C824071275D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B7C67E5-5F4B-42D6-A9BC-1C824071275D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44F48F12-B5E8-4382-AB2E-6F6F9A150A23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44F48F12-B5E8-4382-AB2E-6F6F9A150A23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44F48F12-B5E8-4382-AB2E-6F6F9A150A23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44F48F12-B5E8-4382-AB2E-6F6F9A150A23}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
