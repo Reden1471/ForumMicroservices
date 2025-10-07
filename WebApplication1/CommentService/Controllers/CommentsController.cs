@@ -55,28 +55,43 @@ namespace CommentService.Controllers
         [Authorize] // ONLY SIGNED IN USERS
         public async Task<ActionResult<Comment>> PostComment(Comment comment)
         {
-            // Extract userID from JWT token
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            var newComment = new Comment
+            // 1. Extract userId from token
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
             {
-                Content = comment.Content,
-                PostId = comment.PostId,
-                UserId = userId,
-                CreatedAt = DateTime.UtcNow
-                // DON'T SET THE ID, THE DATABASE DOES
-            };
+                return Unauthorized("Invalid user ID in token");
+            }
 
-            var userExists = await _context.Users.AnyAsync(u => u.Id == newComment.UserId);
+            // 2. DEBUG:
+            //Console.WriteLine($"=== DEBUG ===");
+            //Console.WriteLine($"User ID from token: {userId}");
+            //Console.WriteLine($"Original Comment UserId: {comment.UserId}");
+
+            // 3. USERID BEÁLLÍTÁSA - EZ A KULCSFONTOSSÁGU LÉPÉS!
+            comment.UserId = userId; // Felülírjuk a kérésből jövő értéket
+
+            //Console.WriteLine($"Comment UserId after setting: {comment.UserId}");
+
+            // 4. Check if user exists
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            //Console.WriteLine($"User exists in database: {userExists}");
+
             if (!userExists)
             {
                 return BadRequest("User does not exist");
             }
 
-            _context.Comments.Add(comment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetComment", new { id = newComment.Id }, newComment);
+            try
+            {
+                _context.Comments.Add(comment);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction("GetComment", new { id = comment.Id }, comment);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SAVE ERROR: {ex.Message}");
+                return StatusCode(500, $"Database error: {ex.InnerException?.Message}");
+            }
         }
 
         // PUT: api/comments/5
