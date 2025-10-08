@@ -45,11 +45,15 @@ async function register() {
 
         if (response.ok) {
             showMessage('Successful registration! Now you can login.', true);
-            showLogin();
-            // Empty field
-            document.getElementById('reg-username').value = '';
-            document.getElementById('reg-email').value = '';
-            document.getElementById('reg-password').value = '';
+
+            // Set back to login page
+            setTimeout(() => {
+                showLogin();
+                // Emptying fields
+                document.getElementById('reg-username').value = '';
+                document.getElementById('reg-email').value = '';
+                document.getElementById('reg-password').value = '';
+            }, 2000);
         } else {
             showMessage(data || 'An error has occured while registering', false);
         }
@@ -122,41 +126,76 @@ async function loadPosts() {
 }
 
 // Display posts
-function displayPosts(posts) {
+async function displayPosts(posts) {
     const postsList = document.getElementById('posts-list');
     postsList.innerHTML = '';
 
     if (posts.length === 0) {
-        postsList.innerHTML = '<p style="text-align: center; color: #7f8c8d;">There are no posts yet. Be the first.!</p>';
+        postsList.innerHTML = '<p style="text-align: center; color: #7f8c8d;">There are no posts yet. Be the first!</p>';
         return;
     }
 
-    posts.forEach(post => {
-        const postElement = createPostElement(post);
+    // Gather all of the userIDs
+    const userIds = [...new Set(posts.map(post => post.userId))];
+
+    // Get all userIDs at the same time
+    const usernameMap = await getUsernames(userIds);
+
+    // Display
+    for (const post of posts) {
+        const postElement = await createPostElement(post, usernameMap);
         postsList.appendChild(postElement);
+    }
+}
+
+// Retrieve multiple usernames at once - NEW FEATURE
+async function getUsernames(userIds) {
+    const usernameMap = {};
+    const promises = userIds.map(async (userId) => {
+        try {
+            const response = await fetch(`${API_BASE}/users/username/${userId}`);
+            if (response.ok) {
+                const username = await response.text();
+                usernameMap[userId] = username;
+            } else {
+                usernameMap[userId] = `User${userId}`;
+            }
+        } catch (error) {
+            console.error('Error fetching username:', error);
+            usernameMap[userId] = `User${userId}`;
+        }
     });
+
+    await Promise.all(promises);
+    return usernameMap;
 }
 
 // Create post element
-function createPostElement(post) {
+async function createPostElement(post, usernameMap) {
     const postDiv = document.createElement('div');
     postDiv.className = 'post';
 
     const isOwner = currentUserId === post.userId;
+    const username = usernameMap[post.userId] || `User${post.userId}`;
+    const postDate = formatDate(post.createdAt);
+    const updatedDate = post.updatedAt ? formatDate(post.updatedAt) : null;
 
     postDiv.innerHTML = `
         <div class="post-header">
-            <h3 class="post-title">${escapeHtml(post.title)}</h3>
+            <div>
+                <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                <div class="post-author">Írta: ${escapeHtml(username)}</div>
+            </div>
             <div class="post-meta">
-                ${new Date(post.createdAt).toLocaleString('hu-HU')}
-                ${post.updatedAt ? ` (módosítva: ${new Date(post.updatedAt).toLocaleString('hu-HU')})` : ''}
+                <div>${postDate}</div>
+                ${updatedDate ? `<div class="post-updated">edited: ${updatedDate}</div>` : ''}
             </div>
         </div>
         <div class="post-content">${escapeHtml(post.content)}</div>
         
         ${isOwner ? `
             <div class="post-actions">
-                <button onclick="editPost(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}')" 
+                <button onclick="editPost(${post.id}, '${escapeHtml(post.title.replace(/'/g, "\\'"))}', '${escapeHtml(post.content.replace(/'/g, "\\'"))}')" 
                         class="btn-small btn-edit">Edit</button>
                 <button onclick="deletePost(${post.id})" 
                         class="btn-small btn-delete">Delete</button>
@@ -165,15 +204,15 @@ function createPostElement(post) {
         
         <div class="comments-section">
             <div class="comment-form">
-                <input type="text" id="comment-input-${post.id}" placeholder="Write a comment..." class="comment-input">
-                <button onclick="addComment(${post.id})" class="btn-small btn-comment">Send</button>
+                <input type="text" id="comment-input-${post.id}" placeholder="Írj egy hozzászólást..." class="comment-input">
+                <button onclick="addComment(${post.id})" class="btn-small btn-comment">Küldés</button>
             </div>
             <div id="comments-${post.id}"></div>
         </div>
     `;
 
-    // Load comments to post
-    loadComments(post.id);
+    // Kommentek betöltése
+    await loadComments(post.id, usernameMap);
 
     return postDiv;
 }
@@ -186,37 +225,48 @@ function escapeHtml(text) {
 }
 
 // Load comments
-async function loadComments(postId) {
+async function loadComments(postId, usernameMap = null) {
     try {
         const response = await fetch(`${API_BASE}/comments/post/${postId}`);
         if (!response.ok) return;
 
         const comments = await response.json();
-        displayComments(postId, comments);
+        await displayComments(postId, comments, usernameMap);
     } catch (error) {
-        console.error('An error has occure while loading comments:', error);
+        console.error('Hiba a kommentek betöltésekor:', error);
     }
 }
 
 // Display comments
-function displayComments(postId, comments) {
+async function displayComments(postId, comments, existingUsernameMap = null) {
     const container = document.getElementById(`comments-${postId}`);
     if (!container) return;
 
     container.innerHTML = '';
 
     if (comments.length === 0) {
-        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">There are no comments.</p>';
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">Még nincsenek hozzászólások.</p>';
         return;
     }
 
+    // If there is no username map, request comment user IDs.
+    let usernameMap = existingUsernameMap;
+    if (!usernameMap) {
+        const userIds = [...new Set(comments.map(comment => comment.userId))];
+        usernameMap = await getUsernames(userIds);
+    }
+
     comments.forEach(comment => {
+        const username = usernameMap[comment.userId] || `User${comment.userId}`;
+        const commentDate = formatDate(comment.createdAt);
+
         const commentElement = document.createElement('div');
         commentElement.className = 'comment';
         commentElement.innerHTML = `
             <div class="comment-content">${escapeHtml(comment.content)}</div>
             <div class="comment-meta">
-                ${new Date(comment.createdAt).toLocaleString('hu-HU')}
+                <span class="comment-author">${escapeHtml(username)}</span>
+                <span class="comment-date">${commentDate}</span>
             </div>
         `;
         container.appendChild(commentElement);
@@ -378,3 +428,54 @@ function showMessage(message, isSuccess) {
 document.addEventListener('DOMContentLoaded', function () {
     showLogin();
 });
+
+// Username cache
+let usernameCache = {};
+
+// Get username
+async function getUsername(userId) {
+    if (usernameCache[userId]) {
+        return usernameCache[userId];
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/users/username/${userId}`);
+        if (response.ok) {
+            const username = await response.text();
+            usernameCache[userId] = username;
+            return username;
+        }
+    } catch (error) {
+        console.error('Error fetching username:', error);
+    }
+
+    return `User${userId}`;
+}
+
+// Date format
+function formatDate(dateString) {
+    try {
+        // If the date is empty or NULL
+        if (!dateString || dateString === '0001-01-01T00:00:00') {
+            return 'Unknown date';
+        }
+
+        const date = new Date(dateString);
+
+        // Check if the date is valid
+        if (isNaN(date.getTime())) {
+            return 'Unknown date';
+        }
+
+        return date.toLocaleString('hu-HU', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        console.error('Date formatting error:', error, 'Input:', dateString);
+        return 'Unknown Date';
+    }
+}

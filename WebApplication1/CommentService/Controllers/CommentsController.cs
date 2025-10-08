@@ -67,8 +67,9 @@ namespace CommentService.Controllers
             //Console.WriteLine($"User ID from token: {userId}");
             //Console.WriteLine($"Original Comment UserId: {comment.UserId}");
 
-            // 3. USERID BEÁLLÍTÁSA - EZ A KULCSFONTOSSÁGU LÉPÉS!
-            comment.UserId = userId; // Felülírjuk a kérésből jövő értéket
+            // 3. Set UserID
+            comment.UserId = userId;
+            comment.CreatedAt = DateTime.UtcNow;
 
             //Console.WriteLine($"Comment UserId after setting: {comment.UserId}");
 

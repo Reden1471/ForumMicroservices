@@ -269,3 +269,26 @@ body {
 .hidden {
     display: none;
 }
+
+.post-author {
+    color: #3498db;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.comment-author {
+    color: #3498db;
+    font-weight: bold;
+}
+
+.comment-date {
+    color: #7f8c8d;
+    margin-left: 10px;
+}
+
+.post-updated {
+    color: #e67e22;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}

@@ -138,7 +138,7 @@ namespace ApiGateway.Controllers
         {
             var client = _httpClientFactory.CreateClient("CommentService");
 
-            // Authorization header átadása
+            // Authorization header
             if (Request.Headers.ContainsKey("Authorization"))
             {
                 var authHeader = Request.Headers["Authorization"].ToString();
@@ -187,6 +187,17 @@ namespace ApiGateway.Controllers
             {
                 return NoContent();
             }
+
+            var content = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, content);
+        }
+
+        // GET: api/forum/users/username/5
+        [HttpGet("users/username/{id}")]
+        public async Task<IActionResult> GetUsername(int id)
+        {
+            var client = _httpClientFactory.CreateClient("UserService");
+            var response = await client.GetAsync($"/api/Users/username/{id}");
 
             var content = await response.Content.ReadAsStringAsync();
             return StatusCode((int)response.StatusCode, content);

@@ -36,6 +36,18 @@ namespace UserService.Controllers
             return user;
         }
 
+        // GET: api/users/username/5
+        [HttpGet("username/{id}")]
+        public async Task<ActionResult<string>> GetUsername(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            return user.Username;
+        }
+
         // POST: api/users
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)

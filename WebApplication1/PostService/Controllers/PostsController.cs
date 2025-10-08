@@ -49,6 +49,7 @@ namespace PostService.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
             post.UserId = userId;
             post.CreatedAt = DateTime.UtcNow;
+            post.UpdatedAt = null;
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
