@@ -335,7 +335,7 @@ async function addComment(postId) {
 
         if (response.ok) {
             input.value = '';
-            loadComments(postId);
+            loadPosts();
             showMessage('Comment has been successfully created!', true);
         } else {
             const error = await response.text();
