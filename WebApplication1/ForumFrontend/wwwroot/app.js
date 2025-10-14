@@ -253,6 +253,8 @@ async function displayComments(postId, comments) {  // ← MÁR ASYNC
 
     for (const comment of comments) {
         const username = await getUsername(comment.userId);
+        const isOwner = currentUserId === comment.userId;
+
         const commentElement = document.createElement('div');
         commentElement.className = 'comment';
         commentElement.innerHTML = `
@@ -261,6 +263,14 @@ async function displayComments(postId, comments) {  // ← MÁR ASYNC
                 By <strong>${escapeHtml(username)}</strong> | 
                 ${formatDate(comment.createdAt)}
             </div>
+            ${isOwner ? `
+                <div class="comment-actions">
+                    <button onclick="editComment(${comment.id}, '${escapeHtml(comment.content)}')" 
+                            class="btn-small btn-edit">Edit</button>
+                    <button onclick="deleteComment(${comment.id})" 
+                            class="btn-small btn-delete">Delete</button>
+                </div>
+            ` : ''}
         `;
         container.appendChild(commentElement);
     }
@@ -491,5 +501,66 @@ function formatDate(dateString) {
     } catch (error) {
         console.error('Date formatting error:', error, 'Input:', dateString);
         return 'Unknown Date';
+    }
+}
+
+// Edit comment
+function editComment(commentId, currentContent) {
+    const newContent = prompt('Edit comment:', currentContent);
+    if (newContent === null || newContent.trim() === '') return;
+
+    updateComment(commentId, newContent.trim());
+}
+
+// Update comment
+async function updateComment(commentId, content) {
+    try {
+        const response = await fetch(`${API_BASE}/comments/${commentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentToken}`
+            },
+            body: JSON.stringify({
+                id: commentId,
+                content: content
+            })
+        });
+
+        if (response.ok) {
+            loadPosts();
+            showMessage('Comment updated!', true);
+        } else {
+            const error = await response.text();
+            showMessage('An error has occured while updating comment: ' + error, false);
+        }
+    } catch (error) {
+        showMessage('Network error: ' + error.message, false);
+    }
+}
+
+// Delete comment
+async function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${currentToken}`
+            }
+        });
+
+        if (response.ok) {
+            loadPosts();
+            showMessage('Comment deleted successfully!', true);
+        } else {
+            const error = await response.text();
+            showMessage('An error has occured while deleting comment: ' + error, false);
+        }
+    } catch (error) {
+        showMessage('Network error: ' + error.message, false);
     }
 }
