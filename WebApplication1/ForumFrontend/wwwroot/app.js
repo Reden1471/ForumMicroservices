@@ -351,23 +351,42 @@ function editPost(postId, currentTitle, currentContent) {
 
 async function updatePost(postId, title, content) {
     try {
+        const requestBody = {
+            id: postId,
+            title: title,
+            content: content,
+            userId: currentUserId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        console.log('=== UPDATE POST DEBUG ===');
+        console.log('Request Body:', requestBody);
+
         const response = await fetch(`${API_BASE}/posts/${postId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${currentToken}`
             },
-            body: JSON.stringify({ title, content })
+            body: JSON.stringify(requestBody)
         });
 
+        console.log('Response Status:', response.status);
+
         if (response.ok) {
+            console.log('Update successful!');
             loadPosts();
             showMessage('Post updated!', true);
         } else {
-            const error = await response.text();
-            showMessage('An error has occured while updating post: ' + error, false);
+            const errorText = await response.text();
+            console.error('Error Response Text:', errorText);
+            showMessage('An error has occured while updating post: ' + errorText, false);
         }
+
+        console.log('=== UPDATE POST DEBUG END ===');
     } catch (error) {
+        console.error('Network Error:', error);
         showMessage('Network error: ' + error.message, false);
     }
 }
