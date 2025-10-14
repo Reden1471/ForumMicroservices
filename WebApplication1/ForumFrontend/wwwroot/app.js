@@ -136,10 +136,11 @@ async function displayPosts(posts) {
         return;
     }
 
-    posts.forEach(post => {
-        const postElement = createPostElement(post);
+    for (const post of posts) {
+        const postElement = await createPostElement(post);
         postsList.appendChild(postElement);
-    });
+    }
+
 
     for (const post of posts) {
         await loadComments(post.id);
@@ -168,18 +169,20 @@ async function getUsernames(userIds) {
 }
 
 // Create post element
-function createPostElement(post) {
+async function createPostElement(post) {
     const postDiv = document.createElement('div');
     postDiv.className = 'post';
 
     const isOwner = currentUserId === post.userId;
+    const username = await getUsername(post.userId); 
 
     postDiv.innerHTML = `
         <div class="post-header">
             <h3 class="post-title">${escapeHtml(post.title)}</h3>
             <div class="post-meta">
-                ${new Date(post.createdAt).toLocaleString('hu-HU')}
-                ${post.updatedAt ? ` (edited: ${new Date(post.updatedAt).toLocaleString('hu-HU')})` : ''}
+                By <strong>${escapeHtml(username)}</strong> |
+                ${formatDate(post.createdAt)}
+                ${post.updatedAt ? ` (edited: ${formatDate(post.updatedAt)})` : ''}
             </div>
         </div>
         <div class="post-content">${escapeHtml(post.content)}</div>
@@ -223,7 +226,7 @@ async function loadComments(postId) {
         }
 
         const comments = await response.json();
-        displayComments(postId, comments);
+        await displayComments(postId, comments);
     } catch (error) {
         console.error('An error has occured while loading comments:', error);
         const container = document.getElementById(`comments-${postId}`);
@@ -234,7 +237,7 @@ async function loadComments(postId) {
 }
 
 // Display comments
-function displayComments(postId, comments) {
+async function displayComments(postId, comments) {  // ← MÁR ASYNC
     const container = document.getElementById(`comments-${postId}`);
     if (!container) {
         console.error(`Comments container not found for post ${postId}`);
@@ -248,17 +251,19 @@ function displayComments(postId, comments) {
         return;
     }
 
-    comments.forEach(comment => {
+    for (const comment of comments) {
+        const username = await getUsername(comment.userId);
         const commentElement = document.createElement('div');
         commentElement.className = 'comment';
         commentElement.innerHTML = `
             <div class="comment-content">${escapeHtml(comment.content)}</div>
             <div class="comment-meta">
-                ${new Date(comment.createdAt).toLocaleString('hu-HU')}
+                By <strong>${escapeHtml(username)}</strong> | 
+                ${formatDate(comment.createdAt)}
             </div>
         `;
         container.appendChild(commentElement);
-    });
+    }
 }
 
 // Create new post
