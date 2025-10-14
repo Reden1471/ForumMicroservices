@@ -43,8 +43,10 @@ namespace UserService.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null)
             {
+                Console.WriteLine("User not found with ID: {id}");
                 return NotFound();
             }
+            Console.WriteLine("Found user: {user.Username} for ID: {id}");
             return user.Username;
         }
 

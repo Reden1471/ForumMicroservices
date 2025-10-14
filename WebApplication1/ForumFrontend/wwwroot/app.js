@@ -119,7 +119,8 @@ async function loadPosts() {
         if (!response.ok) throw new Error('An error has occured while loading posts');
 
         const posts = await response.json();
-        displayPosts(posts);
+        await displayPosts(posts);
+
     } catch (error) {
         showMessage('An error has occured while loading posts: ' + error.message, false);
     }
@@ -135,19 +136,15 @@ async function displayPosts(posts) {
         return;
     }
 
-    // Gather all of the userIDs
-    const userIds = [...new Set(posts.map(post => post.userId))];
-
-    // Get all userIDs at the same time
-    const usernameMap = await getUsernames(userIds);
-
-    // Display
-    for (const post of posts) {
-        const postElement = await createPostElement(post, usernameMap);
+    posts.forEach(post => {
+        const postElement = createPostElement(post);
         postsList.appendChild(postElement);
+    });
+
+    for (const post of posts) {
+        await loadComments(post.id);
     }
 }
-
 // Retrieve multiple usernames at once - NEW FEATURE
 async function getUsernames(userIds) {
     const usernameMap = {};
@@ -171,31 +168,25 @@ async function getUsernames(userIds) {
 }
 
 // Create post element
-async function createPostElement(post, usernameMap) {
+function createPostElement(post) {
     const postDiv = document.createElement('div');
     postDiv.className = 'post';
 
     const isOwner = currentUserId === post.userId;
-    const username = usernameMap[post.userId] || `User${post.userId}`;
-    const postDate = formatDate(post.createdAt);
-    const updatedDate = post.updatedAt ? formatDate(post.updatedAt) : null;
 
     postDiv.innerHTML = `
         <div class="post-header">
-            <div>
-                <h3 class="post-title">${escapeHtml(post.title)}</h3>
-                <div class="post-author">Írta: ${escapeHtml(username)}</div>
-            </div>
+            <h3 class="post-title">${escapeHtml(post.title)}</h3>
             <div class="post-meta">
-                <div>${postDate}</div>
-                ${updatedDate ? `<div class="post-updated">edited: ${updatedDate}</div>` : ''}
+                ${new Date(post.createdAt).toLocaleString('hu-HU')}
+                ${post.updatedAt ? ` (edited: ${new Date(post.updatedAt).toLocaleString('hu-HU')})` : ''}
             </div>
         </div>
         <div class="post-content">${escapeHtml(post.content)}</div>
         
         ${isOwner ? `
             <div class="post-actions">
-                <button onclick="editPost(${post.id}, '${escapeHtml(post.title.replace(/'/g, "\\'"))}', '${escapeHtml(post.content.replace(/'/g, "\\'"))}')" 
+                <button onclick="editPost(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}')" 
                         class="btn-small btn-edit">Edit</button>
                 <button onclick="deletePost(${post.id})" 
                         class="btn-small btn-delete">Delete</button>
@@ -204,15 +195,14 @@ async function createPostElement(post, usernameMap) {
         
         <div class="comments-section">
             <div class="comment-form">
-                <input type="text" id="comment-input-${post.id}" placeholder="Írj egy hozzászólást..." class="comment-input">
-                <button onclick="addComment(${post.id})" class="btn-small btn-comment">Küldés</button>
+                <input type="text" id="comment-input-${post.id}" placeholder="Write a comment..." class="comment-input">
+                <button onclick="addComment(${post.id})" class="btn-small btn-comment">Send</button>
             </div>
-            <div id="comments-${post.id}"></div>
+            <div id="comments-${post.id}">
+                <p style="color: #7f8c8d; font-style: italic;">Loading comments...</p>
+            </div>
         </div>
     `;
-
-    // Kommentek betöltése
-    await loadComments(post.id, usernameMap);
 
     return postDiv;
 }
@@ -225,48 +215,46 @@ function escapeHtml(text) {
 }
 
 // Load comments
-async function loadComments(postId, usernameMap = null) {
+async function loadComments(postId) {
     try {
         const response = await fetch(`${API_BASE}/comments/post/${postId}`);
-        if (!response.ok) return;
+        if (!response.ok) {
+            throw new Error(`Failed to load comments for post ${postId}`);
+        }
 
         const comments = await response.json();
-        await displayComments(postId, comments, usernameMap);
+        displayComments(postId, comments);
     } catch (error) {
-        console.error('Hiba a kommentek betöltésekor:', error);
+        console.error('An error has occured while loading comments:', error);
+        const container = document.getElementById(`comments-${postId}`);
+        if (container) {
+            container.innerHTML = '<p style="color: #e74c3c;">Error loading comments</p>';
+        }
     }
 }
 
 // Display comments
-async function displayComments(postId, comments, existingUsernameMap = null) {
+function displayComments(postId, comments) {
     const container = document.getElementById(`comments-${postId}`);
-    if (!container) return;
+    if (!container) {
+        console.error(`Comments container not found for post ${postId}`);
+        return;
+    }
 
     container.innerHTML = '';
 
     if (comments.length === 0) {
-        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">Még nincsenek hozzászólások.</p>';
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">There are no comments.</p>';
         return;
     }
 
-    // If there is no username map, request comment user IDs.
-    let usernameMap = existingUsernameMap;
-    if (!usernameMap) {
-        const userIds = [...new Set(comments.map(comment => comment.userId))];
-        usernameMap = await getUsernames(userIds);
-    }
-
     comments.forEach(comment => {
-        const username = usernameMap[comment.userId] || `User${comment.userId}`;
-        const commentDate = formatDate(comment.createdAt);
-
         const commentElement = document.createElement('div');
         commentElement.className = 'comment';
         commentElement.innerHTML = `
             <div class="comment-content">${escapeHtml(comment.content)}</div>
             <div class="comment-meta">
-                <span class="comment-author">${escapeHtml(username)}</span>
-                <span class="comment-date">${commentDate}</span>
+                ${new Date(comment.createdAt).toLocaleString('hu-HU')}
             </div>
         `;
         container.appendChild(commentElement);
@@ -353,6 +341,8 @@ function editPost(postId, currentTitle, currentContent) {
 
     updatePost(postId, newTitle, newContent);
 }
+
+//Update post
 
 async function updatePost(postId, title, content) {
     try {
