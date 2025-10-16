@@ -1,4 +1,4 @@
-﻿const API_BASE = 'https://localhost:7000/api/forum';
+﻿const API_BASE = 'http://localhost:7000/api/forum';
 let currentToken = null;
 let currentUser = null;
 let currentUserId = null;
