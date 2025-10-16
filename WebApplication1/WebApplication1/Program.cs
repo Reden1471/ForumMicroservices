@@ -15,6 +15,36 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// AUTOMATIC MIGRATION
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+
+        // Try to open database
+        Console.WriteLine("Checking database connection...");
+        if (context.Database.CanConnect())
+        {
+            Console.WriteLine("Database exists, applying migrations...");
+            context.Database.Migrate(); // Applies migrations
+        }
+        else
+        {
+            Console.WriteLine("Database does not exist, creating...");
+            context.Database.EnsureCreated(); // Create database and tables
+        }
+
+        Console.WriteLine("Database setup completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database initialization error: {ex.Message}");
+        // Don't throw exception in order to start the service
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
