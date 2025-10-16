@@ -1,13 +1,14 @@
-##!/bin/bash
-echo "Installing Forum App desktop shortcuts..."
+#!/bin/bash
+echo "📦 Installing Forum App desktop shortcuts..."
 
 # Get the current directory
 PROJECT_DIR=$(pwd)
+DESKTOP_DIR="$HOME/Desktop"
 
 # Create the start script
 cat > "$PROJECT_DIR/start-forum.sh" << 'EOF'
 #!/bin/bash
-echo "Starting Forum Microservices..."
+echo "🚀 Starting Forum Microservices..."
 
 # Change to project directory
 cd "$(dirname "$0")"
@@ -16,7 +17,7 @@ cd "$(dirname "$0")"
 docker-compose down
 docker-compose up --build -d
 
-echo "Waiting for services to initialize..."
+echo "⏳ Waiting for services to initialize..."
 sleep 30
 
 echo "All services are starting!"
@@ -30,7 +31,7 @@ EOF
 # Create the stop script
 cat > "$PROJECT_DIR/stop-forum.sh" << 'EOF'
 #!/bin/bash
-echo "Stopping Forum Microservices..."
+echo "🛑 Stopping Forum Microservices..."
 
 # Change to project directory
 cd "$(dirname "$0")"
@@ -44,7 +45,7 @@ echo "To start again, use the 'Start Forum App' desktop shortcut."
 EOF
 
 # Create the start desktop file
-cat > "$PROJECT_DIR/start-forum.desktop" << EOF
+cat > "$DESKTOP_DIR/start-forum.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -58,7 +59,7 @@ Categories=Development;
 EOF
 
 # Create the stop desktop file
-cat > "$PROJECT_DIR/stop-forum.desktop" << EOF
+cat > "$DESKTOP_DIR/stop-forum.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -74,16 +75,12 @@ EOF
 # Make scripts executable
 chmod +x "$PROJECT_DIR/start-forum.sh"
 chmod +x "$PROJECT_DIR/stop-forum.sh"
-chmod +x "$PROJECT_DIR/start-forum.desktop"
-chmod +x "$PROJECT_DIR/stop-forum.desktop"
-
-# Copy to desktop
-cp "$PROJECT_DIR/start-forum.desktop" "$HOME/Desktop/"
-cp "$PROJECT_DIR/stop-forum.desktop" "$HOME/Desktop/"
+chmod +x "$DESKTOP_DIR/start-forum.desktop"
+chmod +x "$DESKTOP_DIR/stop-forum.desktop"
 
 echo "Desktop shortcuts installed!"
-echo "Start: $HOME/Desktop/start-forum.desktop"
-echo "Stop: $HOME/Desktop/stop-forum.desktop"
+echo "Start: $DESKTOP_DIR/start-forum.desktop"
+echo "Stop: $DESKTOP_DIR/stop-forum.desktop"
 echo ""
 echo "Double-click 'Start Forum App' to start the application"
 echo "Double-click 'Stop Forum App' to stop the application"
