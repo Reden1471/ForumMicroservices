@@ -46,7 +46,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// AUTOMATIC MIGRATION
+// Database check
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -54,25 +54,19 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
 
-        // Try to open database
-        Console.WriteLine("Checking database connection...");
+        // Check if database is avaiable
         if (context.Database.CanConnect())
         {
-            Console.WriteLine("Database exists, applying migrations...");
-            context.Database.Migrate(); // Applies migrations
+            Console.WriteLine("Database is ready.");
         }
         else
         {
-            Console.WriteLine("Database does not exist, creating...");
-            context.Database.EnsureCreated(); // Create database and tables
+            Console.WriteLine("Database is not accessible.");
         }
-
-        Console.WriteLine("Database setup completed successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Database initialization error: {ex.Message}");
-        // Don't throw exception in order to start the service
+        Console.WriteLine("Database check failed: {ex.Message}");
     }
 }
 
