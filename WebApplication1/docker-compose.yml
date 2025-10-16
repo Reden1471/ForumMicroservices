@@ -40,6 +40,9 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=HTML_Feleves_Final
+      - Jwt__Audience=ForumUsers
     depends_on:
       - sqlserver
 
@@ -52,6 +55,9 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=HTML_Feleves_Final
+      - Jwt__Audience=ForumUsers
     depends_on:
       - sqlserver
 
@@ -64,6 +70,9 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
+      - Jwt__Key=YourSuperSecretKeyThatIsAtLeast32CharactersLong!
+      - Jwt__Issuer=HTML_Feleves_Final
+      - Jwt__Audience=ForumUsers
     depends_on:
       - sqlserver
 
