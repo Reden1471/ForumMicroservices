@@ -1,3 +1,5 @@
+using Polly;
+using Polly.Extensions.Http;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,31 +11,48 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+{
+    return HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .OrResult(msg => !msg.IsSuccessStatusCode)
+        .WaitAndRetryAsync(
+            retryCount: 3,
+            sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+            onRetry: (outcome, timespan, retryCount, context) =>
+            {
+                Console.WriteLine($"Retry {retryCount} for {context.PolicyKey} after {timespan.Seconds} seconds. Outcome: {outcome.Result?.StatusCode}");
+            });
+}
+
 // Configure HttpClient for microservices
 builder.Services.AddHttpClient("UserService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Urls:UserService"]);
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-});
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).AddPolicyHandler(GetRetryPolicy());
 
 builder.Services.AddHttpClient("AuthService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Urls:AuthService"]);
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-});
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).AddPolicyHandler(GetRetryPolicy());
 
 builder.Services.AddHttpClient("PostService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Urls:PostService"]);
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-});
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).AddPolicyHandler(GetRetryPolicy());
 
 builder.Services.AddHttpClient("CommentService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["Urls:CommentService"]);
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-});
-
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).AddPolicyHandler(GetRetryPolicy());
 // Adding CORS
 builder.Services.AddCors(options =>
 {

@@ -3,6 +3,29 @@ let currentToken = null;
 let currentUser = null;
 let currentUserId = null;
 
+async function apiCall(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 másodperc timeout
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
+const response = await apiCall(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+});
+
 // UI manager
 function showLogin() {
     document.getElementById('auth-section').style.display = 'block';
