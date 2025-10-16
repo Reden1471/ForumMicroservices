@@ -13,16 +13,16 @@ services:
 
   apigateway:
     build:
-      context: ../
-      dockerfile: docker/ApiGateway.Dockerfile
+      context: .
+      dockerfile: ApiGateway.Dockerfile
     ports:
-      - "7000:80"
+      - "7000:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
-      - Urls__UserService=http://userservice:80
-      - Urls__AuthService=http://authservice:80
-      - Urls__PostService=http://postservice:80
-      - Urls__CommentService=http://commentservice:80
+      - ASPNETCORE_URLS=http://+:8080
+      - Urls__UserService=http://userservice:8080
+      - Urls__AuthService=http://authservice:8080
+      - Urls__PostService=http://postservice:8080
+      - Urls__CommentService=http://commentservice:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
     depends_on:
       - sqlserver
@@ -33,52 +33,60 @@ services:
 
   authservice:
     build:
-      context: ../
-      dockerfile: docker/AuthService.Dockerfile
+      context: .
+      dockerfile: AuthService.Dockerfile
+    ports:
+      - "7002:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
     depends_on:
       - sqlserver
 
   postservice:
     build:
-      context: ../
-      dockerfile: docker/PostService.Dockerfile
+      context: .
+      dockerfile: PostService.Dockerfile
+    ports:
+      - "7003:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
     depends_on:
       - sqlserver
 
   commentservice:
     build:
-      context: ../
-      dockerfile: docker/CommentService.Dockerfile
+      context: .
+      dockerfile: CommentService.Dockerfile
+    ports:
+      - "7004:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
     depends_on:
       - sqlserver
 
   userservice:
     build:
-      context: ../
-      dockerfile: docker/UserService.Dockerfile
+      context: .
+      dockerfile: UserService.Dockerfile
+    ports:
+      - "7001:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ForumMicroservices;User=sa;Password=YourStrong!Password123;TrustServerCertificate=true;
     depends_on:
       - sqlserver
 
   frontend:
     build:
-      context: ../
-      dockerfile: docker/ForumFrontend.Dockerfile
+      context: .
+      dockerfile: ForumFrontend.Dockerfile
     ports:
-      - "7006:80"
+      - "7006:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:8080
 
 volumes:
   sqlserver_data:
