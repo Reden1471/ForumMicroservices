@@ -74,6 +74,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.MapGet("/health", () => "API Gateway is healthy");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
